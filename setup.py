@@ -15,6 +15,21 @@ setup(
     url='http://score-framework.org',
     keywords='score framework mutex synchronization',
     packages=['score.distlock'],
+    license='LGPL',
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Environment :: Console',
+        'Environment :: Web Environment',
+        'Framework :: Pyramid',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: GNU Lesser General '
+            'Public License v3 or later (LGPLv3+)',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Topic :: Software Development :: Libraries :: Application Frameworks',
+    ],
     install_requires=[
         'score.init >= 0.1',
         'SQLAlchemy >= 0.9',
