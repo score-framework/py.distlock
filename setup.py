@@ -14,9 +14,8 @@ setup(
     author_email='score@strg.at',
     url='http://score-framework.org',
     keywords='score framework mutex synchronization',
-    packages=['score.distlock'],
+    packages=['score', 'score.distlock'],
     namespace_packages=['score'],
-    zip_safe=False,
     license='LGPL',
     classifiers=[
         'Development Status :: 4 - Beta',
