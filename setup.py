@@ -7,7 +7,7 @@ with open(os.path.join(here, 'README.rst')) as f:
 
 setup(
     name='score.distlock',
-    version='0.1.1',
+    version='0.2',
     description='Mutex for distributed operations with The SCORE Framework',
     long_description=README,
     author='strg.at',
