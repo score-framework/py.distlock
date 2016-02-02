@@ -32,7 +32,7 @@ setup(
         'Topic :: Software Development :: Libraries :: Application Frameworks',
     ],
     install_requires=[
-        'score.init >= 0.1',
+        'score.init >= 0.3',
         'SQLAlchemy >= 0.9',
     ],
 )
