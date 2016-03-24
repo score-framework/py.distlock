@@ -89,7 +89,8 @@ def mktoken():
     """
     Generates a random token that is required for manipulating an existing lock.
     """
-    return binascii.hexlify(random.getrandbits(128))
+    return binascii.hexlify(bytearray(random.getrandbits(8)
+                                      for _ in range(128))).decode('ascii')
 
 
 class Lock:
@@ -144,7 +145,6 @@ class Lock:
         token = self._get_token(token)
         self.conf._autovacuum()
         session = self.conf.Session()
-        session.begin()
         lock = self._get_lock(session, token)
         if not lock:
             session.rollback()
@@ -168,14 +168,13 @@ class Lock:
         token = self._get_token(token)
         self.conf._autovacuum()
         session = self.conf.Session()
-        session.begin()
         lock = self._get_lock(session, token)
         if not lock:
             session.rollback()
             if ignore_expired:
                 return
             raise LockExpired(self.name, token)
-        session.remove(lock)
+        session.delete(lock)
         session.flush()
         session.commit()
 
@@ -190,7 +189,6 @@ class Lock:
         explanation of the resulting token.
         """
         session = self.conf.Session()
-        session.begin()
         lock = self.conf.lock_cls(name=self.name,
                                   acquired=datetime.now(),
                                   updated=datetime.now(),
@@ -237,8 +235,10 @@ class ConfiguredDistlockModule(ConfiguredModule):
         self.Session = sessionmaker(bind=engine)
         Base = declarative_base()
         Base.metadata.bind = engine
-        self.lock_cls = type('Distlock', [Base], {
-            'name': Column(Integer, unique=True, nullable=False),
+        self.lock_cls = type('Distlock', (Base,), {
+            '__tablename__': '_score_distlock',
+            'id': Column(Integer, primary_key=True),
+            'name': Column(String, unique=True, nullable=False),
             'acquired': Column(DateTime, nullable=False),
             'updated': Column(DateTime, nullable=False),
             'token': Column(String(256), nullable=False),
@@ -295,7 +295,6 @@ class ConfiguredDistlockModule(ConfiguredModule):
         :func:`configured <.init>` with its default value for "autovacuum".
         """
         session = self.Session()
-        session.begin()
         threshold = datetime.now() - timedelta(seconds=self.maxtime)
         session.execute(self.lock_cls.delete(
             (self.lock_cls.name == self.name) &
