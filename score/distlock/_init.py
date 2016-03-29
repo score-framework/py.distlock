@@ -181,13 +181,13 @@ class Lock:
         explanation of the resulting token.
         """
         session = self.conf.Session()
-        self.vacuum(session)
         lock = self.conf.lock_cls(name=self.name,
                                   acquired=datetime.now(),
                                   updated=datetime.now(),
                                   token=mktoken())
         session.add(lock)
         try:
+            self.conf.vacuum(session)
             session.flush()
             session.commit()
             self.token = lock.token
