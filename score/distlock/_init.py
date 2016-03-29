@@ -187,7 +187,7 @@ class Lock:
                                   token=mktoken())
         session.add(lock)
         try:
-            self.vacuum(session)
+            self.conf.vacuum(session)
             session.flush()
             session.commit()
             self.token = lock.token
@@ -296,6 +296,6 @@ class ConfiguredDistlockModule(ConfiguredModule):
             delete()
         if commit:
             session.commit()
-        for name in self.locks.keys()[:]:
+        for name in list(self.locks.keys()):
             if self.locks[name]() is None:
                 del self.locks[name]
