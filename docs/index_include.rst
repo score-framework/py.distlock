@@ -1,5 +1,5 @@
 .. module:: score.distlock
-.. role:: faint
+.. role:: default
 .. role:: confkey
 
 **************
