@@ -27,7 +27,7 @@
 import binascii
 from datetime import datetime, timedelta
 import random
-from score.init import ConfiguredModule, parse_time_interval, parse_bool
+from score.init import ConfiguredModule, parse_time_interval
 from sqlalchemy import Column, String, Integer, DateTime, engine_from_config
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declarative_base
@@ -37,7 +37,6 @@ import weakref
 
 defaults = {
     'maxtime': '1m',
-    'autovacuum': True,
 }
 
 
@@ -58,17 +57,12 @@ def init(confdict):
         Maximum time frame a lock can be held without being updated. Any
         lock older than this time frame is considered expired.
 
-    :confkey:`autovacuum` :default:`True`
-        Will automatically call :meth:`ConfiguredDistlockModule.vacuum` once in
-        a while. It is perfectly safe to leave this value at its default.
-
     """
     conf = defaults.copy()
     conf.update(confdict)
     engine = engine_from_config(conf)
     maxtime = parse_time_interval(conf['maxtime'])
-    autovacuum = parse_bool(conf['autovacuum'])
-    return ConfiguredDistlockModule(engine, maxtime, autovacuum)
+    return ConfiguredDistlockModule(engine, maxtime)
 
 
 class CouldNotAcquireLock(Exception):
@@ -142,7 +136,6 @@ class Lock:
         "maxtime" seconds.
         """
         token = self._get_token(token)
-        self.conf._autovacuum()
         session = self.conf.Session()
         lock = self._get_lock(session, token)
         if not lock:
@@ -166,7 +159,6 @@ class Lock:
         """
         token = self._get_token(token)
         self.token = None
-        self.conf._autovacuum()
         session = self.conf.Session()
         lock = self._get_lock(session, token)
         if not lock:
@@ -195,6 +187,7 @@ class Lock:
                                   token=mktoken())
         session.add(lock)
         try:
+            self.vacuum(session)
             session.flush()
             session.commit()
             self.token = lock.token
@@ -227,11 +220,10 @@ class ConfiguredDistlockModule(ConfiguredModule):
     <score.init.ConfiguredModule>`.
     """
 
-    def __init__(self, engine, maxtime, autovacuum):
+    def __init__(self, engine, maxtime):
         super().__init__(__package__)
         self.engine = engine
         self.maxtime = maxtime
-        self.autovacuum = autovacuum
         self.Session = sessionmaker(bind=engine)
         Base = declarative_base()
         Base.metadata.bind = engine
@@ -286,25 +278,25 @@ class ConfiguredDistlockModule(ConfiguredModule):
         """
         return self.get(name).release(token)
 
-    def vacuum(self):
+    def vacuum(self, session=None):
         """
         Cleans up all expired locks from the database, speeding up all future
         lock operations.
 
-        This function will be called automatically if the module was
-        :func:`configured <.init>` with its default value for "autovacuum".
+        There is no need to call this function manually, it will be invoked on
+        each attempt t acquire a lock.
         """
-        session = self.Session()
+        commit = False
+        if not session:
+            session = self.Session()
+            commit = True
         threshold = datetime.now() - timedelta(seconds=self.maxtime)
         session.execute(self.lock_cls.delete(
             (self.lock_cls.name == self.name) &
             (self.lock_cls.updated < threshold)
         ))
-        session.commit()
+        if commit:
+            session.commit()
         for name in self.locks:
             if self.locks[name]() is None:
                 del self.locks[name]
-
-    def _autovacuum(self):
-        if self.autovacuum and random.randint(1, 100) == 1:
-            self.vacuum()
