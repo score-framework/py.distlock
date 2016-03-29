@@ -47,8 +47,9 @@ preferred way of using this class is via a `with` statement:
 ...
 >>> # the lock is automatically released at this point
 
-But if the use case is similar to the scenario described earlier, you will need
-to call the lock functions manually:
+But if the use case is similar to the scenario described earlier (where one
+process operates on the lock of another), you will need to call the lock
+functions manually:
 
 >>> token = conf.acquire('mylock')
 >>> lock.extend(token)
