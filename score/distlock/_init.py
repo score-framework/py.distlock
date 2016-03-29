@@ -109,7 +109,6 @@ class Lock:
         self.conf = conf
         self.name = name
         self.token = None
-        self.held = None
 
     def __enter__(self):
         self.acquire()
@@ -166,6 +165,7 @@ class Lock:
         *token* parameter.
         """
         token = self._get_token(token)
+        self.token = None
         self.conf._autovacuum()
         session = self.conf.Session()
         lock = self._get_lock(session, token)
@@ -197,7 +197,7 @@ class Lock:
         try:
             session.flush()
             session.commit()
-            self.held = True
+            self.token = lock.token
             return lock.token
         except IntegrityError:
             session.rollback()
