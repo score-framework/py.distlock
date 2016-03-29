@@ -291,12 +291,11 @@ class ConfiguredDistlockModule(ConfiguredModule):
             session = self.Session()
             commit = True
         threshold = datetime.now() - timedelta(seconds=self.maxtime)
-        session.execute(self.lock_cls.delete(
-            (self.lock_cls.name == self.name) &
-            (self.lock_cls.updated < threshold)
-        ))
+        session.query(self.lock_cls).\
+            filter(self.lock_cls.updated < threshold).\
+            delete()
         if commit:
             session.commit()
-        for name in self.locks:
+        for name in self.locks.keys()[:]:
             if self.locks[name]() is None:
                 del self.locks[name]
