@@ -185,9 +185,9 @@ class Lock:
                                   acquired=datetime.now(),
                                   updated=datetime.now(),
                                   token=mktoken())
+        self.conf.vacuum(session)
         session.add(lock)
         try:
-            self.conf.vacuum(session)
             session.flush()
             session.commit()
             self.token = lock.token
