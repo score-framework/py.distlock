@@ -27,6 +27,7 @@
 from ._init import (
     init, ConfiguredDistlockModule, CouldNotAcquireLock, LockExpired, Lock)
 
+__version__ = '0.2.4'
 
 __all__ = ('init', 'ConfiguredDistlockModule', 'CouldNotAcquireLock',
            'LockExpired', 'Lock')
