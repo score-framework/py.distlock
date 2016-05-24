@@ -53,7 +53,7 @@ def init(confdict):
 
             sqlalchemy.url = postgresql://dbuser@localhost/projname
 
-    :confkey:`maxtime` :default:`1m`
+    :confkey:`maxtime` :confdefault:`1m`
         Maximum time frame a lock can be held without being updated. Any
         lock older than this time frame is considered expired.
 

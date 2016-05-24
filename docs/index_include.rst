@@ -1,13 +1,10 @@
 .. module:: score.distlock
-.. role:: default
 .. role:: confkey
+.. role:: confdefault
 
 **************
 score.distlock
 **************
-
-Introduction
-============
 
 This module provides means of creating and managing `reentrant mutexes`_ in
 multi-server environments. Locks are created in a common database accessible by
@@ -15,48 +12,62 @@ all involed parties.
 
 .. _reentrant mutexes: https://en.wikipedia.org/wiki/Reentrant_mutex
 
-Use Case
-========
+Quickstart
+==========
 
-Web applications usually require exclusivity on certain operations, like
-changing an object. When one user is in the process of editing a blog entry,
-for example, other users should not be able to edit the same document at the
-same time. The scenario is supported through authentication tokens in the form
-of the following:
-
-Someone acquires the mutex (i.e. a :class:`.Lock`) required to edit an object
-via AJAX and receives an authentication token (a hex string) in return. Before
-the configured "maxtime" lapses (the time frame, the acquring party is granted
-the lock for), the application will send another request extending the
-lock—otherwise the lock will expire and another user can edit the
-same object. This second request needs to pass the authentication token
-received earlier to prove that it is indeed the same user that acquired the
-lock in the first place.
-
-Usage
-=====
-
-If the mutex is needed for a short operation (i.e. one that will be finished by
-the same process that started it, like processing an incoming request), the
-preferred way of using this class is via a `with` statement:
+Acquire the lock "mylock" for the duration of the ``dosomething()`` call:
 
 >>> with conf.get('mylock') as lock:
 ...     dosomething()
-...     lock.extend()
-...     domorethings()
 ...
 >>> # the lock is automatically released at this point
 
-But if the use case is similar to the scenario described earlier (where one
-process operates on the lock of another), you will need to call the lock
-functions manually:
+No other process can acquire the same lock "mylock" while ``dosomething()`` is
+running. If the ``dosomething()`` operation takes a long time, your lock might
+expire in the mean time. You should occasionally call :meth:`Lock.extend` in
+such cases:
+
+>>> with conf.get('mylock') as lock:
+...     do_part_of_something()
+...     lock.extend()
+...     do_more_things()
+...
+
+Details
+=======
+
+Tokens
+------
+
+If a lock is to be held even after the process has finished, it can ben
+converted into a token:
 
 >>> token = conf.acquire('mylock')
->>> lock.extend(token)
->>> lock.release(token)
+>>> token
+b'0f5ba13b1a9d2c9951b29352af619534c0f1487c5a9b5b7e0a6d64042fe8fa15aad37be9d5fae35217381e2fffbdb25c1787a572a89b0ce98eaa509ed8f3346b8fabc82deb625542b2e29c9d26f301906fd1d3bd026bf816faa60180374a077146f08d0995e3dbd84726754c9e9f9080404a6283a8d78c41f2d1ac5cd0aa6c62'
+
+As long as you do not hit a timeout, this token represents the hold on the
+:class:`Lock` "mylock". You can use this token to control your lock from
+another process:
+
+>>> conf.release('mylock', token)
+
+Timeouts
+--------
+
+Since it is possible to keep a lock after leaving a python process, all locks
+will expire automatically after a certain time frame to prevent process
+starvation. If you want to keep a lock for a longer duration than the
+configured *maxtime*, you should :meth:`extend <Lock.extend>` your lock before
+it expires:
+
+>>> conf.extend('mylock', token)
+
+API
+===
 
 Configuration
-=============
+-------------
 
 .. autofunction:: score.distlock.init
 
@@ -84,7 +95,7 @@ Configuration
     .. automethod:: vacuum
 
 Lock
-====
+----
 
 .. autoclass:: score.distlock.Lock
 
@@ -97,7 +108,7 @@ Lock
     .. automethod:: release
 
 Exceptions
-==========
+----------
 
 .. autoclass:: score.distlock.CouldNotAcquireLock
 
