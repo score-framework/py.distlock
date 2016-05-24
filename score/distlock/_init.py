@@ -221,7 +221,8 @@ class ConfiguredDistlockModule(ConfiguredModule):
     """
 
     def __init__(self, engine, maxtime):
-        super().__init__(__package__)
+        import score.distlock
+        super().__init__(score.distlock)
         self.engine = engine
         self.maxtime = maxtime
         self.Session = sessionmaker(bind=engine)
