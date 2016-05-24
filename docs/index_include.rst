@@ -33,6 +33,11 @@ such cases:
 ...     do_more_things()
 ...
 
+Configuration
+=============
+
+.. autofunction:: score.distlock.init
+
 Details
 =======
 
